@@ -13,6 +13,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Typography, BorderRadius } from '../../theme/colors';
 import NotificationModal from './feedback/NotificationModal';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 
 
 interface HeaderProps {
@@ -25,9 +26,20 @@ interface HeaderProps {
 export default function Header({ title, showSearch = false, onSearchPress, onSearchTextChange }: HeaderProps) {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { userData } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchText, setSearchText] = useState('');
+
+  const avatarInitials = userData?.name
+    ? userData.name
+        .split(' ')
+        .filter(Boolean)
+        .map((w) => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+    : 'CM';
 
   const handleSearchToggle = () => {
     if (onSearchPress) {
@@ -117,7 +129,7 @@ export default function Header({ title, showSearch = false, onSearchPress, onSea
               style={styles.avatar}
               activeOpacity={0.7}
               onPress={() => navigation.navigate('Perfil')}>
-              <Text style={styles.avatarText}>MS</Text>
+              <Text style={styles.avatarText}>{avatarInitials}</Text>
             </TouchableOpacity>
           </View>
         </>

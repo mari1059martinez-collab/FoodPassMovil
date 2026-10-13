@@ -25,6 +25,9 @@
     },
     "web": {
       "favicon": "./assets/foodpass_logo.png"
-    }
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }

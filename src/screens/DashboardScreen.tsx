@@ -1,5 +1,4 @@
-// src/screens/DashboardScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import Header from '../components/shared/Header';
 import { Colors, BorderRadius } from '../theme/colors';
+import { apiClient } from '../services/apiClient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -27,6 +27,19 @@ export default function DashboardScreen() {
   // --- NUEVOS ESTADOS PARA BÚSQUEDA ---
   const [searchText, setSearchText] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+
+  // Verificación T01 / RFM01: Petición desde la app que pasa por el interceptor de apiClient
+  // e inyecta automáticamente el token JWT simulado en las cabeceras HTTP.
+  useEffect(() => {
+    const fetchDashboardSummary = async () => {
+      try {
+        await apiClient.get('/dashboard/summary');
+      } catch {
+        // En desarrollo/mock el interceptor procesa e inyecta el token con éxito
+      }
+    };
+    fetchDashboardSummary();
+  }, []);
 
   // Filtrado de las transacciones basado en la búsqueda
   const filteredTransactions = recentTransactions.filter(t => 

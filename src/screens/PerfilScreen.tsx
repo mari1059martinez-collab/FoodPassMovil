@@ -21,6 +21,7 @@ import SwitchField from '../components/shared/selection/SwitchField';
 import { useNavigation } from '@react-navigation/native';
 import FavoriteLocationsModal from '../components/shared/selection/FavoriteLocationsModal';
 import SoporteChatScreen from './SoporteChatScreen';
+import { useAuth } from '../context/AuthContext';
 
 // Tipo para los items del menú de configuración
 type SettingItem = {
@@ -89,6 +90,18 @@ export default function PerfilScreen() {
   const [menuPrefsVisible, setMenuPrefsVisible] = useState(false);
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuPrefItem | null>(null);
   const navigation = useNavigation<any>();
+  const { logout, userData } = useAuth();
+
+  const userName = userData?.name || 'Carlos Mendoza';
+  const userEmail = userData?.email || 'carlos@foodpass.com';
+  const userInitials = userName
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || 'CM';
+  const userPlan = userData?.plan ? `${userData.plan} Member` : 'Premium Member';
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -102,18 +115,18 @@ export default function PerfilScreen() {
       >
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>JP</Text>
+            <Text style={styles.avatarText}>{userInitials}</Text>
             <View style={styles.verifiedBadge}>
               <MaterialIcons name="verified" size={18} color={Colors.tertiary} />
             </View>
           </View>
 
-          <Text style={styles.profileName}>Juan Perez</Text>
-          <Text style={styles.profileEmail}>juan.perez@empresa.com</Text>
+          <Text style={styles.profileName}>{userName}</Text>
+          <Text style={styles.profileEmail}>{userEmail}</Text>
 
           <View style={styles.membershipChip}>
             <MaterialIcons name="workspace-premium" size={14} color={Colors.onPrimaryContainer} />
-            <Text style={styles.membershipText}>Premium Member</Text>
+            <Text style={styles.membershipText}>{userPlan}</Text>
           </View>
 
           <View style={styles.profileStats}>
@@ -208,7 +221,7 @@ export default function PerfilScreen() {
           </View>
         ))}
 
-        <TouchableOpacity style={styles.logoutButton} activeOpacity={0.8} onPress={() => navigation.navigate('Login')}>
+        <TouchableOpacity style={styles.logoutButton} activeOpacity={0.8} onPress={() => logout()}>
           <MaterialIcons name="logout" size={20} color={Colors.error} />
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </TouchableOpacity>
