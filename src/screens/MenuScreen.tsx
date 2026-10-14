@@ -16,7 +16,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import Header from '../components/shared/Header';
+import CartModal from '../components/shared/CartModal';
 import { Colors, BorderRadius } from '../theme/colors';
+import { useCart } from '../context/CartContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 40 - 12) / 2;
@@ -87,12 +89,13 @@ type MenuItem = typeof menuItems[0];
 
 export default function MenuScreen() {
   const [activeCategory, setActiveCategory] = useState('Todos');
+  const { addItem, totalItems, getTotalPrice } = useCart();
+  const [cartModalOpen, setCartModalOpen] = useState(false);
   
   // --- NUEVOS ESTADOS PARA BÚSQUEDA ---
   const [searchText, setSearchText] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [cartItems, setCartItems] = useState<MenuItem[]>([]);
 
   // Lógica de filtrado combinada (Categoría + Texto)
   const filteredItems = menuItems.filter(item => {
@@ -119,9 +122,18 @@ export default function MenuScreen() {
         <Text style={styles.cardDescription} numberOfLines={2}>{item.description}</Text>
         <View style={styles.cardFooter}>
           <Text style={styles.cardPrice}>{item.price}</Text>
-          <TouchableOpacity style={styles.selectButton} activeOpacity={0.8} onPress={() => setSelectedItem(item)}>
-            <Text style={styles.selectButtonText}>Seleccionar</Text>
-          </TouchableOpacity>
+          <View style={styles.cardActionsRow}>
+            <TouchableOpacity style={styles.selectButton} activeOpacity={0.8} onPress={() => setSelectedItem(item)}>
+              <Text style={styles.selectButtonText}>Ver</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quickAddButton}
+              activeOpacity={0.8}
+              onPress={() => addItem(item)}
+            >
+              <MaterialIcons name="add-shopping-cart" size={18} color={Colors.onPrimaryContainer} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </View>
@@ -171,8 +183,22 @@ export default function MenuScreen() {
             <View style={styles.chefBadge}><Text style={styles.chefBadgeText}>RECOMENDACIÓN DEL CHEF</Text></View>
             <Text style={styles.featuredTitle}>Corte Artisan{'\n'}con Finas Hierbas</Text>
             <View style={styles.featuredFooter}>
-              <TouchableOpacity style={styles.featuredButton} activeOpacity={0.8}>
-                <MaterialIcons name="shopping-cart" size={20} color={Colors.onPrimaryContainer} />
+              <TouchableOpacity
+                style={styles.featuredButton}
+                activeOpacity={0.8}
+                onPress={() => {
+                  addItem({
+                    id: 'featured-chef-1',
+                    name: 'Corte Artisan con Finas Hierbas',
+                    description: 'Corte selecto cocido a fuego lento con finas hierbas aromáticas.',
+                    price: '$45.50',
+                    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400',
+                    category: 'Plato Fuerte',
+                  });
+                }}
+              >
+                <MaterialIcons name="add-shopping-cart" size={20} color={Colors.onPrimaryContainer} />
+                <Text style={styles.featuredButtonText}>Pedir</Text>
               </TouchableOpacity>
               <Text style={styles.featuredPrice}>$45.50</Text>
             </View>
@@ -198,13 +224,45 @@ export default function MenuScreen() {
           keyExtractor={(item) => item.id}
           numColumns={2}
           columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, totalItems > 0 && { paddingBottom: 80 }]}
           scrollEnabled={false}
           ListEmptyComponent={
             <Text style={styles.emptyText}>No se encontraron platos.</Text>
           }
         />
       </ScrollView>
+
+      {/* BARRA FLOTANTE DINÁMICA DEL CARRITO (T07 - RFM04, RFM05) */}
+      {totalItems > 0 && (
+        <View style={styles.floatingBarWrapper}>
+          <TouchableOpacity
+            style={styles.floatingBar}
+            activeOpacity={0.9}
+            onPress={() => setCartModalOpen(true)}
+          >
+            <View style={styles.floatingBarLeft}>
+              <View style={styles.floatingBadge}>
+                <MaterialIcons name="shopping-cart" size={16} color={Colors.onPrimaryContainer} />
+                <Text style={styles.floatingBadgeText}>{totalItems}</Text>
+              </View>
+              <View style={styles.floatingTexts}>
+                <Text style={styles.floatingItemsLabel}>
+                  {totalItems} {totalItems === 1 ? 'producto añadido' : 'productos añadidos'}
+                </Text>
+                <Text style={styles.floatingTotalPrice}>
+                  Total: ${getTotalPrice().toFixed(2)}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.floatingBarRight}>
+              <Text style={styles.floatingCheckoutText}>Checkout</Text>
+              <MaterialIcons name="arrow-forward" size={16} color={Colors.onPrimaryContainer} />
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* POPUP DE DETALLE DEL PLATO */}
       <Modal
         animationType="fade"
@@ -231,8 +289,10 @@ export default function MenuScreen() {
                   style={popupStyles.addButton}
                   activeOpacity={0.8}
                   onPress={() => {
-                    setCartItems(prev => [...prev, selectedItem]);
-                    setSelectedItem(null);
+                    if (selectedItem) {
+                      addItem(selectedItem);
+                      setSelectedItem(null);
+                    }
                   }}
                 >
                   <MaterialIcons name="add-shopping-cart" size={20} color={Colors.onPrimaryContainer} />
@@ -243,6 +303,12 @@ export default function MenuScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* MODAL DEL CARRITO Y CHECKOUT */}
+      <CartModal
+        visible={cartModalOpen}
+        onClose={() => setCartModalOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -315,8 +381,99 @@ const styles = StyleSheet.create({
   cardDescription: { fontSize: 11, color: Colors.onSurfaceVariant, lineHeight: 15, marginBottom: 12 },
   cardFooter: { gap: 8 },
   cardPrice: { fontSize: 20, fontWeight: '800', color: Colors.primaryContainer },
-  selectButton: { backgroundColor: Colors.primaryContainer, paddingVertical: 10, borderRadius: BorderRadius.lg, alignItems: 'center' },
-  selectButtonText: { fontSize: 12, fontWeight: '700', color: Colors.onPrimaryContainer },
+  cardActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  selectButton: {
+    flex: 1,
+    backgroundColor: Colors.surfaceContainerLow,
+    paddingVertical: 9,
+    borderRadius: BorderRadius.lg,
+    alignItems: 'center',
+  },
+  selectButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.onSurface,
+  },
+  quickAddButton: {
+    backgroundColor: Colors.primaryContainer,
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // === BARRA FLOTANTE DE CARRITO (T07) ===
+  floatingBarWrapper: {
+    position: 'absolute',
+    bottom: 12,
+    left: 16,
+    right: 16,
+    zIndex: 99,
+  },
+  floatingBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: Colors.inverseSurface,
+    borderRadius: BorderRadius.xxl,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  floatingBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  floatingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primaryContainer,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    gap: 4,
+  },
+  floatingBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: Colors.onPrimaryContainer,
+  },
+  floatingTexts: {
+    justifyContent: 'center',
+  },
+  floatingItemsLabel: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '500',
+  },
+  floatingTotalPrice: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  floatingBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primaryContainer,
+    borderRadius: BorderRadius.xl,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 4,
+  },
+  floatingCheckoutText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: Colors.onPrimaryContainer,
+  },
   emptyText: { textAlign: 'center', marginTop: 20, color: Colors.onSurfaceVariant },
 });
 

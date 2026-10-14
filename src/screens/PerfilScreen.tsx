@@ -22,6 +22,7 @@ import { useNavigation } from '@react-navigation/native';
 import FavoriteLocationsModal from '../components/shared/selection/FavoriteLocationsModal';
 import SoporteChatScreen from './SoporteChatScreen';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 // Tipo para los items del menú de configuración
 type SettingItem = {
@@ -90,18 +91,25 @@ export default function PerfilScreen() {
   const [menuPrefsVisible, setMenuPrefsVisible] = useState(false);
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuPrefItem | null>(null);
   const navigation = useNavigation<any>();
-  const { logout, userData } = useAuth();
+const { logout, userData } = useAuth();
+const { addItem } = useCart();
 
-  const userName = userData?.name || 'Carlos Mendoza';
-  const userEmail = userData?.email || 'carlos@foodpass.com';
-  const userInitials = userName
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || 'CM';
-  const userPlan = userData?.plan ? `${userData.plan} Member` : 'Premium Member';
+const userName = userData?.name || 'Carlos Mendoza';
+const userEmail = userData?.email || 'carlos@foodpass.com';
+
+const userInitials = userName
+  .split(' ')
+  .filter(Boolean)
+  .map((w) => w[0])
+  .slice(0, 2)
+  .join('')
+  .toUpperCase() || 'CM';
+
+const userPlan = userData?.plan
+  ? `${userData.plan} Member`
+  : 'Premium Member';
+  const { addItem } = useCart();
+
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -371,7 +379,16 @@ export default function PerfilScreen() {
                   <Text style={menuStyles.popupName}>{selectedMenuItem.name}</Text>
                   <Text style={menuStyles.popupDesc}>{selectedMenuItem.description}</Text>
                   <Text style={menuStyles.popupPrice}>{selectedMenuItem.price}</Text>
-                  <TouchableOpacity style={menuStyles.popupAddBtn} activeOpacity={0.8}>
+                  <TouchableOpacity
+                    style={menuStyles.popupAddBtn}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      if (selectedMenuItem) {
+                        addItem(selectedMenuItem);
+                        setSelectedMenuItem(null);
+                      }
+                    }}
+                  >
                     <MaterialIcons name="add-shopping-cart" size={20} color={Colors.onPrimaryContainer} />
                     <Text style={menuStyles.popupAddText}>Agregar al carrito</Text>
                   </TouchableOpacity>

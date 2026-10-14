@@ -1,4 +1,5 @@
 // src/components/shared/Header.tsx
+
 import React, { useState } from 'react';
 import {
   View,
@@ -12,24 +13,39 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Typography, BorderRadius } from '../../theme/colors';
 import NotificationModal from './feedback/NotificationModal';
+import CartModal from './CartModal';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
-
+import { useCart } from '../../context/CartContext';
 
 interface HeaderProps {
   title: string;
   showSearch?: boolean;
+  showCart?: boolean;
   onSearchPress?: () => void;
   onSearchTextChange?: (text: string) => void;
 }
 
-export default function Header({ title, showSearch = false, onSearchPress, onSearchTextChange }: HeaderProps) {
+export default function Header({
+  title,
+  showSearch = false,
+  showCart = true,
+  onSearchPress,
+  onSearchTextChange,
+}: HeaderProps) {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+
   const { userData } = useAuth();
+  const { totalItems } = useCart();
+
   const [modalVisible, setModalVisible] = useState(false);
+  const [cartVisible, setCartVisible] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchText, setSearchText] = useState('');
+
+  // Conserva aquí el resto de tu código original.
+
 
   const avatarInitials = userData?.name
     ? userData.name
@@ -113,7 +129,27 @@ export default function Header({ title, showSearch = false, onSearchPress, onSea
               </TouchableOpacity>
             )}
 
-            {/* Botón de notificaciones - Ahora funcional */}
+            {/* Botón del Carrito con Badge Dinámico (T07) */}
+            {showCart && (
+              <TouchableOpacity 
+                style={styles.iconButton} 
+                activeOpacity={0.7}
+                onPress={() => setCartVisible(true)}
+              >
+                <View style={styles.cartWrapper}>
+                  <MaterialIcons name="shopping-cart" size={22} color={Colors.onBackground} />
+                  {totalItems > 0 && (
+                    <View style={styles.cartBadge}>
+                      <Text style={styles.cartBadgeText}>
+                        {totalItems > 99 ? '99+' : totalItems}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {/* Botón de notificaciones */}
             <TouchableOpacity 
               style={styles.iconButton} 
               activeOpacity={0.7}
@@ -139,6 +175,12 @@ export default function Header({ title, showSearch = false, onSearchPress, onSea
       <NotificationModal 
         visible={modalVisible} 
         onClose={() => setModalVisible(false)} 
+      />
+
+      {/* El Modal del Carrito de Compras */}
+      <CartModal
+        visible={cartVisible}
+        onClose={() => setCartVisible(false)}
       />
     </View>
   );
@@ -192,6 +234,28 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceContainerLow,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  cartWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -7,
+    backgroundColor: Colors.primaryContainer,
+    minWidth: 17,
+    height: 17,
+    borderRadius: 8.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  cartBadgeText: {
+    color: Colors.onPrimaryContainer,
+    fontSize: 9,
+    fontWeight: '800',
   },
   notifWrapper: {
     position: 'relative',
