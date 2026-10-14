@@ -13,14 +13,21 @@
 // En el diseño web original había una barra lateral (sidebar). En móvil,
 // ese patrón se convierte en una barra de tabs en la parte inferior.
 // Esto sigue las guías de UX de iOS y Android.
+//
+// CAMBIO T02: Ahora usa AuthContext para la navegación condicional.
+// El estado de autenticación viene del contexto global, no de useState local.
+// Esto permite que cualquier pantalla pueda hacer login/logout.
 
-import React, { useState } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
-import { View } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// Importamos el hook de autenticación
+import { useAuth } from '../context/AuthContext';
 
 // Importamos todas las pantallas
 import LoginScreen from '../screens/LoginScreen';
@@ -106,27 +113,86 @@ function MainTabs() {
   );
 }
 
-// Componente raíz del navegador.
+// ──────────────────────────────────────────────
+// Pantalla de carga
+// ──────────────────────────────────────────────
+// Se muestra brevemente mientras se restaura la sesión de SecureStore.
+// Sin esto, el usuario vería un flash del login antes de ir al dashboard.
+
+function LoadingScreen() {
+  return (
+    <View style={loadingStyles.container}>
+      <ActivityIndicator size="large" color={Colors.primaryContainer} />
+    </View>
+  );
+}
+
+const loadingStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+  },
+});
+
+// ──────────────────────────────────────────────
+// Componente raíz del navegador
+// ──────────────────────────────────────────────
 // Maneja el flujo de autenticación: Login → App Principal
+//
+// CAMBIO T02: Ahora usa useAuth() del AuthContext global en vez de
+// un useState local. Esto permite:
+// - Persistencia de sesión entre reinicios de app (SecureStore)
+// - Login/logout desde cualquier pantalla (PerfilScreen, etc.)
+// - Protección real de rutas (no solo visual)
+
 export default function AppNavigator() {
-  // isLoggedIn controla si mostramos el Login o la App principal.
-  // En una app real esto vendría de un contexto de autenticación o AsyncStorage.
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // isAuth viene del contexto global — cualquier pantalla puede cambiarlo.
+  // isLoading indica si aún estamos restaurando la sesión de SecureStore.
+  const { isAuth, isLoading, login } = useAuth();
+
+  // Mientras restauramos la sesión, mostramos un spinner.
+  // Esto evita que el usuario vea el login por un instante antes
+  // de ser redirigido al dashboard.
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
 
   return (
     // NavigationContainer SIEMPRE envuelve todo el sistema de navegación.
     // Es el equivalente al router en una app web.
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {isLoggedIn ? (
-          // Si el usuario está autenticado, mostramos las tabs principales
+        {isAuth ? (
+          // Si el usuario está autenticado, mostramos las pantallas del flujo autenticado
           <>
-            {/* Si el usuario está autenticado */}
-            <Stack.Screen name="Main" component={MainTabs} /><Stack.Screen name="Security" component={SecurityScreen} /><Stack.Screen name="HelpCenter" component={HelpCenterScreen} /></>
+            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="Security" component={SecurityScreen} />
+            <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />
+          </>
         ) : (
-          // Si no, mostramos el login y le pasamos la función para autenticarse
+          // Si no, mostramos el login y le pasamos la función para autenticarse.
+          // La función handleLogin simula la respuesta del API y llama al login del contexto.
           <Stack.Screen name="Login">
-            {() => <LoginScreen onLogin={() => setIsLoggedIn(true)} />}
+            {() => (
+              <LoginScreen
+                onLogin={async (enteredEmail?: string) => {
+                  // Simulamos una respuesta del backend con un token JWT y datos de usuario.
+                  // En producción, estos datos vendrían de la respuesta del endpoint /auth/login.
+                  const simulatedToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkNhcmxvcyBNZW5kb3phIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+                  const simulatedUser = {
+                    id: 'usr_001',
+                    name: 'Carlos Mendoza',
+                    email: enteredEmail && enteredEmail.includes('@') ? enteredEmail.trim() : 'carlos@foodpass.com',
+                    role: 'employee',
+                    plan: 'Premium',
+                  };
+
+                  await login(simulatedToken, simulatedUser);
+                }}
+              />
+            )}
           </Stack.Screen>
         )}
       </Stack.Navigator>

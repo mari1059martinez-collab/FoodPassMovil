@@ -28,7 +28,7 @@ import { Image } from 'react-native';
 
 // Props que recibe esta pantalla desde el Navigator
 interface LoginScreenProps {
-  onLogin: () => void; // Función que se llama cuando el login es exitoso
+  onLogin: (email?: string) => void | Promise<void>; // Función que se llama cuando el login es exitoso
 }
 
 export default function LoginScreen({ onLogin }: LoginScreenProps) {
@@ -44,14 +44,17 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const [passwordFocused, setPasswordFocused] = useState(false);
 
   // Función que simula el proceso de login
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setIsLoading(true);
-    // En una app real, aquí llamarías a tu API.
-    // setTimeout simula una llamada de red que tarda 1.5 segundos.
-    setTimeout(() => {
+    try {
+      // Simula pequeña latencia de red para la animación de carga
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await onLogin(email);
+    } catch (error) {
+      console.error('[LoginScreen] Error durante login:', error);
+    } finally {
       setIsLoading(false);
-      onLogin(); // Le decimos al Navigator que el login fue exitoso
-    }, 1500);
+    }
   };
 
   return (

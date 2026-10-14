@@ -1,4 +1,5 @@
 // src/components/shared/Header.tsx
+
 import React, { useState } from 'react';
 import {
   View,
@@ -14,8 +15,8 @@ import { Colors, Typography, BorderRadius } from '../../theme/colors';
 import NotificationModal from './feedback/NotificationModal';
 import CartModal from './CartModal';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
-
 
 interface HeaderProps {
   title: string;
@@ -34,11 +35,27 @@ export default function Header({
 }: HeaderProps) {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+
+  const { userData } = useAuth();
   const { totalItems } = useCart();
+
   const [modalVisible, setModalVisible] = useState(false);
   const [cartVisible, setCartVisible] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchText, setSearchText] = useState('');
+
+  // Conserva aquí el resto de tu código original.
+
+
+  const avatarInitials = userData?.name
+    ? userData.name
+        .split(' ')
+        .filter(Boolean)
+        .map((w) => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+    : 'CM';
 
   const handleSearchToggle = () => {
     if (onSearchPress) {
@@ -148,7 +165,7 @@ export default function Header({
               style={styles.avatar}
               activeOpacity={0.7}
               onPress={() => navigation.navigate('Perfil')}>
-              <Text style={styles.avatarText}>MS</Text>
+              <Text style={styles.avatarText}>{avatarInitials}</Text>
             </TouchableOpacity>
           </View>
         </>
