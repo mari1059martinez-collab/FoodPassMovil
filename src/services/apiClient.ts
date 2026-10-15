@@ -29,10 +29,13 @@ export const TOKEN_KEY = 'foodpass_jwt_token';
 // Clave para almacenar los datos del usuario como JSON string.
 export const USER_DATA_KEY = 'foodpass_user_data';
 
-// URL base del backend. En producción se reemplazaría por la URL real.
-// Para desarrollo/emulador Android se usa 10.0.2.2 (host de la máquina).
-// Para iOS simulator se puede usar localhost.
-const API_BASE_URL = 'https://api.foodpass.example.com/v1';
+// URL base del backend.
+// En desarrollo con emulador Android se usa 10.0.2.2 (alias del host local).
+// En iOS, Web y pruebas se usa localhost:3000/api.
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  (Platform.OS === 'android' ? 'http://10.0.2.2:3000/api' : 'http://localhost:3000/api');
+
 
 // ──────────────────────────────────────────────
 // Capa de Almacenamiento Seguro Multiplataforma

@@ -108,8 +108,6 @@ const userInitials = userName
 const userPlan = userData?.plan
   ? `${userData.plan} Member`
   : 'Premium Member';
-  const { addItem } = useCart();
-
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>

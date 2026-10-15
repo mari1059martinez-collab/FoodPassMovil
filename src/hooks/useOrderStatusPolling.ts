@@ -33,7 +33,7 @@ export function useOrderStatusPolling({
   const [pollCount, setPollCount] = useState<number>(0);
 
   const isMountedRef = useRef<boolean>(true);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchStatus = useCallback(async (isManual: boolean = false) => {
     if (!orderId) return;
